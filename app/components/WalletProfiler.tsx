@@ -151,7 +151,7 @@ export default function WalletProfiler({ jwt }: { jwt: string }) {
             className="font-mono text-xs text-zinc-400 hover:text-accent transition-colors"
           >
             {address}
-            <span className="ml-1 text-zinc-700">&nearr;</span>
+            <span className="ml-1 text-zinc-700">&#x2197;</span>
           </a>
           <CopyButton text={address} />
         </div>
@@ -176,7 +176,7 @@ export default function WalletProfiler({ jwt }: { jwt: string }) {
                 <span className="text-sm font-medium text-zinc-300">
                   {b.chain}
                 </span>
-                <span className="text-zinc-700 text-xs ml-auto">&nearr;</span>
+                <span className="text-zinc-700 text-xs ml-auto">&#x2197;</span>
               </div>
               {b.loading ? (
                 <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ export default function WalletProfiler({ jwt }: { jwt: string }) {
                         className="text-zinc-600 hover:text-accent transition-colors"
                         title="View token on explorer"
                       >
-                        <span className="text-zinc-700">&nearr;</span>
+                        <span className="text-zinc-700">&#x2197;</span>
                       </a>
                     </>
                   )}

@@ -45,7 +45,7 @@ export default function HolderChart({ holders, explorer }: { holders: Holder[]; 
                     className="font-mono text-zinc-400 hover:text-accent transition-colors"
                   >
                     {truncate(h.address)}
-                    <span className="ml-1 text-zinc-700">&nearr;</span>
+                    <span className="ml-1 text-zinc-700">&#x2197;</span>
                   </a>
                   <CopyButton text={h.address} />
                 </span>

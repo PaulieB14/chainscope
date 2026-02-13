@@ -94,11 +94,16 @@ export default function TokenResearch({ jwt }: Props) {
   const [ticker, setTicker] = useState("");
   const [poolInfo, setPoolInfo] = useState<any[]>([]);
   const [swaps, setSwaps] = useState<any[]>([]);
+  const [market, setMarket] = useState<any>(null);
 
   const explorer = getExplorer(network);
 
-  const analyze = async () => {
-    if (!contract.trim()) return;
+  const analyze = async (overrideContract?: string, overrideNetwork?: EvmChainId) => {
+    const addr = (overrideContract || contract).trim();
+    const net = overrideNetwork || network;
+    if (!addr) return;
+    if (overrideContract) setContract(overrideContract);
+    if (overrideNetwork) setNetwork(overrideNetwork);
     setLoading(true);
     setError("");
     setHolders([]);
@@ -107,10 +112,17 @@ export default function TokenResearch({ jwt }: Props) {
     setSwaps([]);
     setTicker("");
 
+    // Fetch CoinGecko market data (best-effort, free API)
+    setMarket(null);
+    fetch(`https://api.coingecko.com/api/v3/coins/ethereum/contract/${addr}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setMarket(d))
+      .catch(() => {});
+
     try {
       const [holdersRes, poolsRes] = await Promise.all([
-        getEvmHolders(jwt, network, contract.trim()).catch(() => ({ data: [] })),
-        getEvmPools(jwt, network, contract.trim()).catch(() => ({ data: [] })),
+        getEvmHolders(jwt, net, addr).catch(() => ({ data: [] })),
+        getEvmPools(jwt, net, addr).catch(() => ({ data: [] })),
       ]);
 
       setHolders(holdersRes.data || []);
@@ -129,8 +141,8 @@ export default function TokenResearch({ jwt }: Props) {
         const startTime = monthAgo.toISOString().split("T")[0];
 
         const [ohlcRes, swapsRes] = await Promise.all([
-          getEvmPoolOhlc(jwt, network, poolAddress, "1d", startTime, endTime, "30").catch(() => ({ data: [] })),
-          getEvmSwaps(jwt, network, "10", poolAddress).catch(() => ({ data: [] })),
+          getEvmPoolOhlc(jwt, net, poolAddress, "1d", startTime, endTime, "30").catch(() => ({ data: [] })),
+          getEvmSwaps(jwt, net, "10", poolAddress).catch(() => ({ data: [] })),
         ]);
 
         setOhlcData(ohlcRes.data || []);
@@ -166,7 +178,7 @@ export default function TokenResearch({ jwt }: Props) {
           onKeyDown={(e) => e.key === "Enter" && analyze()}
         />
         <button
-          onClick={analyze}
+          onClick={() => analyze()}
           disabled={loading || !contract.trim()}
           className="px-6 py-2.5 bg-accent text-black rounded-lg text-sm font-semibold hover:bg-green-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-accent/20 hover:shadow-accent/30 whitespace-nowrap"
         >
@@ -192,10 +204,7 @@ export default function TokenResearch({ jwt }: Props) {
         ].map((t) => (
           <button
             key={t.label}
-            onClick={() => {
-              setContract(t.addr);
-              setNetwork("mainnet");
-            }}
+            onClick={() => analyze(t.addr, "mainnet")}
             className="px-3 py-1.5 text-xs bg-card border border-border rounded-lg text-zinc-400 hover:text-white hover:border-accent/50 transition-all"
           >
             {t.label}
@@ -227,6 +236,49 @@ export default function TokenResearch({ jwt }: Props) {
       {error && (
         <div className="animate-fade-in bg-danger/10 border border-danger/30 rounded-xl p-4 mb-6 text-danger text-sm">
           {error}
+        </div>
+      )}
+
+      {/* CoinGecko Market Overview */}
+      {market && (
+        <div className="animate-fade-in mb-6 bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-3 mb-4">
+            {market.image?.small && (
+              <img src={market.image.small} alt="" className="w-8 h-8 rounded-full" />
+            )}
+            <div>
+              <h3 className="text-sm font-bold text-white">
+                {market.name} <span className="text-zinc-500 font-normal uppercase">{market.symbol}</span>
+              </h3>
+              <span className="text-xs text-zinc-600">#{market.market_cap_rank} by market cap</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <div className="text-[10px] uppercase text-zinc-600 mb-1">Price</div>
+              <div className="text-sm font-bold text-white">
+                ${market.market_data?.current_price?.usd?.toLocaleString() ?? "—"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase text-zinc-600 mb-1">24h Change</div>
+              <div className={`text-sm font-bold ${(market.market_data?.price_change_percentage_24h ?? 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {market.market_data?.price_change_percentage_24h?.toFixed(2) ?? "—"}%
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase text-zinc-600 mb-1">Market Cap</div>
+              <div className="text-sm font-bold text-white">
+                ${((market.market_data?.market_cap?.usd ?? 0) / 1e9).toFixed(2)}B
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase text-zinc-600 mb-1">24h Volume</div>
+              <div className="text-sm font-bold text-white">
+                ${((market.market_data?.total_volume?.usd ?? 0) / 1e6).toFixed(1)}M
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -299,7 +351,7 @@ export default function TokenResearch({ jwt }: Props) {
                       className="py-2 px-3 rounded-lg text-xs font-medium bg-white/5 border border-border text-zinc-400 hover:text-white hover:border-zinc-500 transition-all"
                       title="View contract on block explorer"
                     >
-                      Explorer &nearr;
+                      Explorer &#x2197;
                     </a>
                     <CopyButton text={p.pool} />
                   </div>
