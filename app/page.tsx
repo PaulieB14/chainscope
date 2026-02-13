@@ -128,6 +128,15 @@ export default function Home() {
           >
             The Graph Token API
           </a>
+          {" "}&middot;{" "}
+          <a
+            href="https://github.com/PaulieB14/chainscope"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-500 hover:text-accent transition-colors"
+          >
+            GitHub
+          </a>
           {" "}&middot; Your API key never leaves your browser
         </p>
       </footer>
